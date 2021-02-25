@@ -7,7 +7,7 @@ import com.stu.asyncJdbc.net.ByteBufAdapter;
  * @date: 2021/1/25 18:06
  * @Description:
  */
-public abstract class ReadPacket {
+public abstract class ReadPacket extends Packet {
     private PacketHead head;
 
     /**
@@ -28,11 +28,13 @@ public abstract class ReadPacket {
     protected abstract void readBody(ByteBufAdapter byteBufAdapter);
 
     /**
-     * 验证一个packet是否解析成功
+     * 验证一个packet是否解析成功,由子类选择是否实现
      *
      * @return
      */
-    public abstract void validate();
+    public void validate() {
+
+    }
 
 
     public PacketHead getHead() {

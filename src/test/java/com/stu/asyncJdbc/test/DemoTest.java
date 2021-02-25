@@ -9,10 +9,11 @@ import java.sql.DriverManager;
  * @Description:
  */
 public class DemoTest {
-    public static final String DRIVER = "com.mysql.cj.jdbc";
-    public static final String USER = "root";
+    public static final String DRIVER = "com.mysql.cj.jdbc.Driver";
+    public static final String USER = "visitor";
+    public static final String PASSWORD = "123456";
     public static final int PORT = 3306;
-    public static final String URL = "jdbc:mysql://localhost:3306/otsea";
+    public static final String URL = "jdbc:mysql://120.79.175.145:3306/otsea";
 
     static {
         try {
@@ -23,6 +24,7 @@ public class DemoTest {
     }
 
     public static void main(String[] args) throws Exception {
-        Connection conn = DriverManager.getConnection(URL);
+        Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+        conn.close();
     }
 }

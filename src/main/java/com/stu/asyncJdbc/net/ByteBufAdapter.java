@@ -7,6 +7,7 @@ import com.stu.asyncJdbc.type.StringNull;
 import io.netty.buffer.ByteBuf;
 
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -26,6 +27,47 @@ public class ByteBufAdapter {
         return byteBuf.isReadable();
     }
 
+    /**
+     * 写入一个byte
+     *
+     * @param value
+     * @return
+     */
+    public ByteBufAdapter writeByte(int value) {
+        byteBuf.writeByte(value);
+        return this;
+    }
+
+    /**
+     * 写入一个int
+     *
+     * @param value
+     * @return
+     */
+    public void writeInt4(int value) {
+        byteBuf.writeIntLE(value);
+    }
+
+    public void writeSameBytes(byte value, int num) {
+        byte[] buf = new byte[num];
+        Arrays.fill(buf, value);
+        byteBuf.writeBytes(buf);
+    }
+
+    public void writeString(String value) {
+        byteBuf.writeBytes(value.getBytes());
+    }
+
+    public void writeStringNull(String value) {
+        byteBuf.writeBytes((value + " ").getBytes());
+    }
+
+
+    /**
+     * 读取一个byte
+     *
+     * @return
+     */
     public byte readByte() {
         return byteBuf.readByte();
     }
@@ -75,5 +117,10 @@ public class ByteBufAdapter {
             throw new CodeConversionException();
         }
     }
+
+    public ByteBuf getByteBuf() {
+        return this.byteBuf;
+    }
+
 
 }

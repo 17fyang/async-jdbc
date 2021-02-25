@@ -10,13 +10,18 @@ import com.stu.asyncJdbc.common.exception.PacketAnalysisException;
 public class PacketHead {
     //载荷长度使用的byte个数
     public static final int PACKET_HEAD_LENGTH_BYTES = 3;
+    //packet head使用的byte个数
+    public static final int PACKET_HEAD_BYTES = 4;
     //荷载长度 表示实际内容的长度
     private int contentLength;
     //包id
     private byte sequenceId;
 
-    public PacketHead(byte[] contentLength, byte sequenceId) {
-        this.contentLength = PacketHead.toIntContentLength(contentLength);
+    public PacketHead(byte[] length, byte sequenceId) {
+        //转成Integer类型的长度
+        if (length == null || length.length != PACKET_HEAD_LENGTH_BYTES) throw new PacketAnalysisException();
+        this.contentLength = length[0] + length[1] * 256 + length[2] * 256 * 256;
+
         this.sequenceId = sequenceId;
     }
 
@@ -26,14 +31,20 @@ public class PacketHead {
     }
 
     /**
-     * 转成Integer类型的长度
+     * 转成byte数组输出(小端)
      *
      * @return
      */
-    public static int toIntContentLength(byte[] length) {
-        if (length == null || length.length != PACKET_HEAD_LENGTH_BYTES) throw new PacketAnalysisException();
-        return length[0] + length[1] * 256 + length[2] * 256 * 256;
+    public byte[] toBytes() {
+        byte[] result = new byte[PACKET_HEAD_BYTES];
+
+        result[0] = (byte) (this.contentLength & 0xff);
+        result[1] = (byte) (this.contentLength >> 8 & 0xff);
+        result[2] = (byte) (this.contentLength >> 16 & 0xff);
+        result[3] = this.sequenceId;
+        return result;
     }
+
 
     public int getContentLength() {
         return contentLength;

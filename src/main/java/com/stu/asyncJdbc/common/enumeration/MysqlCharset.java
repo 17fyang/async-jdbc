@@ -6,7 +6,8 @@ package com.stu.asyncJdbc.common.enumeration;
  * @Description: mysql码表映射
  */
 public enum MysqlCharset {
-    LATIN1((byte) 0x08, "latin1_swedish_ci");
+    LATIN1((byte) 0x08, "latin1_swedish_ci"),
+    UTF8_GENERAL_CI((byte) 0x21, "utf8_general_ci");
 
     private byte code;
     private String charSetName;
