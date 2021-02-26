@@ -1,5 +1,6 @@
 package com.stu.asyncJdbc.handler;
 
+import com.stu.asyncJdbc.packet.HandshakeResponsePacket;
 import com.stu.asyncJdbc.packet.ServerHelloPacket;
 
 /**
@@ -9,4 +10,5 @@ import com.stu.asyncJdbc.packet.ServerHelloPacket;
  */
 public class PacketHandleFactory {
     public static final PacketHandler<ServerHelloPacket> SERVER_HELLO_HANDLER = new PacketHandler<>(ServerHelloPacket.class);
+    public static final PacketHandler<HandshakeResponsePacket> HANDSHAKE_RESPONSE_PACKET_PACKET_HANDLER = new PacketHandler<>(HandshakeResponsePacket.class);
 }

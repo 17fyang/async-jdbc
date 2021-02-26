@@ -4,7 +4,6 @@ import com.stu.asyncJdbc.common.enumeration.CapabilityFlag;
 import com.stu.asyncJdbc.common.enumeration.MysqlCharset;
 import com.stu.asyncJdbc.common.exception.PacketAnalysisException;
 import com.stu.asyncJdbc.net.ByteBufAdapter;
-import com.stu.asyncJdbc.type.StringNull;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -14,7 +13,7 @@ import com.stu.asyncJdbc.type.StringNull;
 public class ServerHelloPacket extends ReadPacket {
     public static final int SUPPORT_PROTO_VERSION = 10;
     private byte protoVersion;
-    private StringNull serverVersion;
+    private String serverVersion;
     private int connectId;
     private String authPluginPart1;
     private int serverCapability;
@@ -22,7 +21,7 @@ public class ServerHelloPacket extends ReadPacket {
     private int serverStatus;
     private byte lengthOfPluginData;
     private String authPluginPart2;
-    private StringNull authPluginName;
+    private String authPluginName;
 
     @Override
     public void readBody(ByteBufAdapter byteBufAdapter) {
@@ -63,8 +62,11 @@ public class ServerHelloPacket extends ReadPacket {
 
         //第一部分authPlugin字符串
         if ((this.serverCapability & CapabilityFlag.CLIENT_SECURE_CONNECTION) != 0) {
-            int len = Math.max(13, this.lengthOfPluginData - 8);
-            this.authPluginPart2 = byteBufAdapter.readString(len);
+            this.authPluginPart2 = byteBufAdapter.readStringNull();
+
+            //以下这种读取方式是协议中写的，但是实测mysql_native_password插件的报文数据长度和这个不一致，所以改成了上面的方法
+//            int len = Math.max(13, this.lengthOfPluginData - 8);
+//            this.authPluginPart2 = byteBufAdapter.readString(len);
         }
 
         //使用的验证插件名字
@@ -106,7 +108,7 @@ public class ServerHelloPacket extends ReadPacket {
         return protoVersion;
     }
 
-    public StringNull getServerVersion() {
+    public String getServerVersion() {
         return serverVersion;
     }
 
@@ -138,7 +140,7 @@ public class ServerHelloPacket extends ReadPacket {
         return authPluginPart2;
     }
 
-    public StringNull getAuthPluginName() {
+    public String getAuthPluginName() {
         return authPluginName;
     }
 }

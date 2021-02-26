@@ -10,19 +10,17 @@ import io.netty.buffer.Unpooled;
  * @Description:
  */
 public abstract class SendPacket extends Packet {
-    //初始ByteBuf容量
-    public static final int INIT_CAPACITY = 128;
-
     /**
      * 写入数据到ByteBufAdapter
      *
      * @return
      */
     public final ByteBufAdapter write() {
-        ByteBufAdapter byteBufAdapter = new ByteBufAdapter(Unpooled.buffer(INIT_CAPACITY));
+        ByteBufAdapter byteBufAdapter = new ByteBufAdapter();
         writeBody(byteBufAdapter);
 
-        int bodyLength = byteBufAdapter.getByteBuf().arrayOffset();
+        byte[] bodyBytes = byteBufAdapter.getAllBytes();
+        int bodyLength = bodyBytes.length;
         System.out.println("--debug 待发送的包长度为：" + bodyLength);
 
         //todo 复制了一遍ByteBuf内容 待优化
@@ -32,7 +30,7 @@ public abstract class SendPacket extends Packet {
         PacketHead head = new PacketHead(bodyLength, (byte) 1);
 
         writeByteBuf.writeBytes(head.toBytes());
-        writeByteBuf.writeBytes(byteBufAdapter.getByteBuf().array());
+        writeByteBuf.writeBytes(bodyBytes);
 
         return new ByteBufAdapter(writeByteBuf);
     }

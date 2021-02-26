@@ -10,7 +10,7 @@ import com.google.common.hash.Hashing;
  */
 @SuppressWarnings("all")
 public class SecureAuthentication implements IAuthPlugin {
-    
+
     @Override
     public byte[] verify(byte[] password, byte[] randomCode) {
         Hasher hasher = Hashing.sha1().newHasher();
@@ -27,6 +27,11 @@ public class SecureAuthentication implements IAuthPlugin {
         }
 
         return left;
+    }
+
+    @Override
+    public String getPluginName() {
+        return "mysql_native_password";
     }
 
 }

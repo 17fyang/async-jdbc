@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -16,8 +17,8 @@ import java.security.NoSuchAlgorithmException;
 public class GuavaTest {
     @Test
     public void mainTest() {
-        verify("123456", "A0kO(xE1d%'4pYNXPi?=");
-        trueVerify("123456", "A0kO(xE1d%'4pYNXPi?=");
+        verify("123456", "\"9;\\<X&TT(j`\"$/^m(}`");
+        trueVerify("123456", "]LEU[G3i7ui1T7Ruz%Cd");
     }
 
     public void trueVerify(String password, String randomCode) {
@@ -39,15 +40,10 @@ public class GuavaTest {
         md.update(passwordHashStage2);
 
         byte[] toBeXord = md.digest();
-        printBytes(toBeXord);
         int numToXor = toBeXord.length;
         for (int i = 0; i < numToXor; i++) {
             toBeXord[i] = (byte) (toBeXord[i] ^ passwordHashStage1[i]);
         }
-
-        printBytes(passwordHashStage2);
-        printBytes(toBeXord);
-
     }
 
     public byte[] verify(String password, String randomCode) {
@@ -64,6 +60,10 @@ public class GuavaTest {
         for (int i = 0; i < left.length; i++) {
             left[i] = (byte) (left[i] ^ rightHash2[i]);
         }
+
+        System.out.println(Arrays.toString(password.getBytes()));
+        System.out.println(Arrays.toString(randomCode.getBytes()));
+        System.out.println(Arrays.toString(left));
 
         return left;
     }

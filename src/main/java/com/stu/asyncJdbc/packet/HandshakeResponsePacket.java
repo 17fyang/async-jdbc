@@ -1,7 +1,13 @@
 package com.stu.asyncJdbc.packet;
 
+import com.stu.asyncJdbc.common.enumeration.CapabilityFlag;
 import com.stu.asyncJdbc.common.enumeration.MysqlCharset;
 import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.util.LenencUtil;
+import com.stu.asyncJdbc.util.StringUtil;
+
+import java.util.Arrays;
+import java.util.Map;
 
 
 /**
@@ -18,6 +24,10 @@ public class HandshakeResponsePacket extends SendPacket {
     private byte charset = MysqlCharset.UTF8_GENERAL_CI.getCode();
     private LoginConfigBuilder loginConfigBuilder;
 
+    public HandshakeResponsePacket(LoginConfigBuilder loginConfigBuilder) {
+        this.loginConfigBuilder = loginConfigBuilder;
+    }
+
     @Override
     public void writeBody(ByteBufAdapter byteBufAdapter) {
         //client capability
@@ -27,14 +37,75 @@ public class HandshakeResponsePacket extends SendPacket {
         //max packet size
         byteBufAdapter.writeInt4(maxPacketSize);
 
-        //unUse code
+        //charset code
+        byteBufAdapter.writeByte(MysqlCharset.UTF8_GENERAL_CI.getCode());
+
+        //un use code
         byteBufAdapter.writeSameBytes((byte) 0, 23);
 
         //user name
         byteBufAdapter.writeStringNull(loginConfigBuilder.getUser());
 
-        
+        //auth-response
+        String password = loginConfigBuilder.getPassword();
+        String authRandomCode = loginConfigBuilder.getAuthRandomCode();
+        byte[] verifiedCode = loginConfigBuilder.getAuthPlugin().verify(StringUtil.withAscii(password), StringUtil.withAscii(authRandomCode));
+
+        System.out.println("verifyCode:" + Arrays.toString(password.getBytes()));
+        System.out.println("verifyCode:" + Arrays.toString(authRandomCode.getBytes()));
+        System.out.println("verifyCode:" + Arrays.toString(verifiedCode));
+
+        if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0) {
+            byte[] lenencLen = LenencUtil.ofInt(verifiedCode.length);
+            byteBufAdapter.writeBytes(lenencLen);
+            byteBufAdapter.writeBytes(verifiedCode);
+        } else if ((clientCapability & CapabilityFlag.CLIENT_SECURE_CONNECTION) != 0) {
+            byteBufAdapter.writeInt4(verifiedCode.length);
+            byteBufAdapter.writeBytes(verifiedCode);
+        } else {
+            byteBufAdapter.writeStringNull(StringUtil.valueOf(verifiedCode));
+        }
+
+        //database name
+        if ((clientCapability & CapabilityFlag.CLIENT_CONNECT_WITH_DB) != 0) {
+            byteBufAdapter.writeStringNull(loginConfigBuilder.getDatabaseName());
+        }
+
+        //auth plugin name
+        if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH) != 0) {
+            byteBufAdapter.writeStringNull(loginConfigBuilder.getAuthPlugin().getPluginName());
+        }
+
+        //connect attribute
+        if ((clientCapability & CapabilityFlag.CLIENT_CONNECT_ATTRS) != 0) {
+            ByteBufAdapter attributeByte = new ByteBufAdapter();
+
+            int attributeLength = 0;
+
+            for (Map.Entry<String, String> entry : loginConfigBuilder.getConnectAttribute().entrySet()) {
+                byte[] key = entry.getKey().getBytes();
+                byte[] keyLen = LenencUtil.ofInt(key.length);
+                byte[] value = entry.getValue().getBytes();
+                byte[] valueLen = LenencUtil.ofInt(value.length);
+
+                attributeByte.writeBytes(keyLen);
+                attributeByte.writeBytes(key);
+                attributeByte.writeBytes(valueLen);
+                attributeByte.writeBytes(value);
+                attributeLength += (keyLen.length + key.length + valueLen.length + value.length);
+            }
+
+            byteBufAdapter.writeBytes(LenencUtil.ofInt(attributeLength));
+            byteBufAdapter.writeBytes(attributeByte.getAllBytes());
+        }
     }
 
-
+    @Override
+    public String toString() {
+        return "HandshakeResponsePacket{" +
+                "maxPacketSize=" + maxPacketSize +
+                ", charset=" + charset +
+                ", loginConfigBuilder=" + loginConfigBuilder +
+                '}';
+    }
 }

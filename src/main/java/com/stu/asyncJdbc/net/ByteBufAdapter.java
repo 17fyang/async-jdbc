@@ -3,8 +3,9 @@ package com.stu.asyncJdbc.net;
 import com.stu.asyncJdbc.common.CommonConfig;
 import com.stu.asyncJdbc.common.enumeration.ByteEnum;
 import com.stu.asyncJdbc.common.exception.CodeConversionException;
-import com.stu.asyncJdbc.type.StringNull;
+import com.stu.asyncJdbc.util.StringUtil;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -17,7 +18,14 @@ import java.util.List;
  * @Description: mysql传输协议用的是小端传输
  */
 public class ByteBufAdapter {
+    //初始ByteBuf容量
+    public static final int INIT_CAPACITY = 128;
     private ByteBuf byteBuf;
+
+
+    public ByteBufAdapter() {
+        this.byteBuf = Unpooled.buffer(INIT_CAPACITY);
+    }
 
     public ByteBufAdapter(ByteBuf byteBuf) {
         this.byteBuf = byteBuf;
@@ -54,12 +62,17 @@ public class ByteBufAdapter {
         byteBuf.writeBytes(buf);
     }
 
+    public void writeBytes(byte[] value) {
+        byteBuf.writeBytes(value);
+    }
+
     public void writeString(String value) {
         byteBuf.writeBytes(value.getBytes());
     }
 
     public void writeStringNull(String value) {
-        byteBuf.writeBytes((value + " ").getBytes());
+        byteBuf.writeBytes(value.getBytes());
+        byteBuf.writeByte(ByteEnum.FILLER);
     }
 
 
@@ -96,13 +109,13 @@ public class ByteBufAdapter {
         return dst;
     }
 
-    public StringNull readStringNull() {
+    public String readStringNull() {
         List<Byte> list = new LinkedList<>();
         byte temp;
         while ((temp = byteBuf.readByte()) != ByteEnum.FILLER) {
             list.add(temp);
         }
-        return StringNull.valueOf(list);
+        return StringUtil.valueOf(list);
     }
 
     public String readString(int length) {
@@ -116,6 +129,13 @@ public class ByteBufAdapter {
         } catch (UnsupportedEncodingException e) {
             throw new CodeConversionException();
         }
+    }
+
+    public byte[] getAllBytes() {
+        byte[] buf = new byte[this.byteBuf.readableBytes()];
+        int readerIndex = this.byteBuf.readerIndex();
+        this.byteBuf.getBytes(readerIndex, buf);
+        return buf;
     }
 
     public ByteBuf getByteBuf() {

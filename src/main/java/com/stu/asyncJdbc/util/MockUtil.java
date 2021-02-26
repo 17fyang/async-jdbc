@@ -7,6 +7,6 @@ package com.stu.asyncJdbc.util;
  */
 public class MockUtil {
     public static int mockClientCapability() {
-        return 0xa20f003e;
+        return 0x003ea20f;
     }
 }

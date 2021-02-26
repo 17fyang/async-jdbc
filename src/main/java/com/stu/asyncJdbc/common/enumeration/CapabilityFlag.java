@@ -1,13 +1,11 @@
 package com.stu.asyncJdbc.common.enumeration;
 
-import com.stu.asyncJdbc.type.Flag;
-
 /**
  * @author: 乌鸦坐飞机亠
  * @date: 2021/1/27 13:06
  * @Description:
  */
-public class CapabilityFlag extends Flag {
+public class CapabilityFlag {
     public static final int CLIENT_LONG_PASSWORD = 0x00000001; /* new more secure passwords */
     public static final int CLIENT_FOUND_ROWS = 0x00000002;
     public static final int CLIENT_LONG_FLAG = 0x00000004; /* Get all column flags */
