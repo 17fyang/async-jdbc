@@ -3,6 +3,7 @@ package com.stu.asyncJdbc.handler;
 import com.stu.asyncJdbc.net.ByteBufAdapter;
 import com.stu.asyncJdbc.packet.HandshakeResponsePacket;
 import com.stu.asyncJdbc.packet.LoginConfigBuilder;
+import com.stu.asyncJdbc.packet.PacketContext;
 import com.stu.asyncJdbc.packet.ServerHelloPacket;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,10 +15,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * @Description:
  */
 public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
-    private boolean isRead = false;
-    private boolean isWrite = false;
-    private ServerHelloPacket helloPacket;
-
+    private volatile boolean isRead = false;
+    private volatile boolean isWrite = false;
 
     /**
      * 通道就绪
@@ -42,10 +41,18 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
 
         ByteBuf byteBuf = (ByteBuf) msg;
         ByteBufAdapter byteBufAdapter = new ByteBufAdapter(byteBuf);
-        ServerHelloPacket serverHelloPacket = PacketHandleFactory.SERVER_HELLO_HANDLER.read(byteBufAdapter);
 
-        this.helloPacket = serverHelloPacket;
-        System.out.println(serverHelloPacket);
+        if (!ChannelService.INSTANCE.hasChannel(ctx.channel())) {
+            //读取server handshake包
+            //todo 补上context内容
+            ServerHelloPacket serverHelloPacket = PacketHandleFactory.SERVER_HELLO_HANDLER.read(byteBufAdapter, new PacketContext());
+            ChannelContext channelContext = new ChannelContext();
+            channelContext.flagReceiveServerHello(serverHelloPacket);
+            ChannelService.INSTANCE.addContext(ctx.channel(), channelContext);
+            System.out.println(serverHelloPacket);
+        }
+
+
     }
 
     /**
@@ -58,14 +65,20 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
         if (isWrite) return;
         isWrite = true;
 
-        LoginConfigBuilder builder = LoginConfigBuilder.build().withUser("visitor")
-                .withDatabase("otsea").withPassword("123456").withServerRandomCode(this.helloPacket.getAuthPluginPart1() + this.helloPacket.getAuthPluginPart2());
-        HandshakeResponsePacket responsePacket = new HandshakeResponsePacket(builder);
+        ChannelContext channelContext = ChannelService.INSTANCE.getChannelContext(ctx.channel());
+        if (channelContext == null) return;
 
-        System.out.println(responsePacket);
+        //server handshake包响应
+        if (channelContext.getChannelStatus() == ChannelContext.STATUS_RECEIVE_HANDSHAKE_INIT) {
+            ServerHelloPacket serverHelloPacket = channelContext.getServerHelloPacket();
+            LoginConfigBuilder builder = LoginConfigBuilder.build().withUser("visitor")
+                    .withDatabase("otsea").withPassword("123456")
+                    .withServerRandomCode(serverHelloPacket.getAuthPluginPart1() + serverHelloPacket.getAuthPluginPart2());
+            HandshakeResponsePacket responsePacket = new HandshakeResponsePacket(builder);
+            ByteBufAdapter byteBufAdapter = PacketHandleFactory.HANDSHAKE_RESPONSE_PACKET_PACKET_HANDLER.write(responsePacket);
+            ctx.writeAndFlush(byteBufAdapter.getByteBuf());
+        }
 
-        ByteBufAdapter byteBufAdapter = PacketHandleFactory.HANDSHAKE_RESPONSE_PACKET_PACKET_HANDLER.write(responsePacket);
-        ctx.writeAndFlush(byteBufAdapter.getByteBuf());
     }
 
 }

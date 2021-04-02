@@ -7,4 +7,5 @@ package com.stu.asyncJdbc.common.enumeration;
  */
 public class ByteEnum {
     public static final byte FILLER = 0x00;
+    public static final byte COM_QUERY = 0x03;
 }

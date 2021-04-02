@@ -21,7 +21,6 @@ public abstract class SendPacket extends Packet {
 
         byte[] bodyBytes = byteBufAdapter.getAllBytes();
         int bodyLength = bodyBytes.length;
-        System.out.println("--debug 待发送的包长度为：" + bodyLength);
 
         //todo 复制了一遍ByteBuf内容 待优化
         ByteBuf writeByteBuf = Unpooled.buffer(bodyLength + PacketHead.PACKET_HEAD_BYTES);

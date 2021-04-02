@@ -3,6 +3,7 @@ package com.stu.asyncJdbc.packet;
 import com.stu.asyncJdbc.common.enumeration.CapabilityFlag;
 import com.stu.asyncJdbc.common.enumeration.MysqlCharset;
 import com.stu.asyncJdbc.common.exception.PacketAnalysisException;
+import com.stu.asyncJdbc.common.exception.UnsupportVersionException;
 import com.stu.asyncJdbc.net.ByteBufAdapter;
 
 /**
@@ -24,7 +25,7 @@ public class ServerHelloPacket extends ReadPacket {
     private String authPluginName;
 
     @Override
-    public void readBody(ByteBufAdapter byteBufAdapter) {
+    public void readBody(ByteBufAdapter byteBufAdapter, PacketContext packetContext) {
         // 协议版本号
         this.protoVersion = byteBufAdapter.readByte();
 
@@ -79,9 +80,13 @@ public class ServerHelloPacket extends ReadPacket {
 
     @Override
     public void validate() {
-        //校验支持解析的版本号
+        //校验支持解析的mysql协议版本号
         if (this.protoVersion != SUPPORT_PROTO_VERSION)
-            throw new PacketAnalysisException("no support protoVersion " + this.protoVersion);
+            throw new UnsupportVersionException();
+
+        //仅支持4.1的协议
+        if ((this.serverCapability & CapabilityFlag.CLIENT_PROTOCOL_41) == 0)
+            throw new UnsupportVersionException();
 
         //校验是否支持该编码
         if (this.mysqlCharset == null)

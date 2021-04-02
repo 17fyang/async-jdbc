@@ -13,19 +13,19 @@ public abstract class ReadPacket extends Packet {
     /**
      * 从byteBuf中解析内容到packet中
      */
-    public final void read(ByteBufAdapter byteBufAdapter) {
+    public final void read(ByteBufAdapter byteBufAdapter, PacketContext packetContext) {
         byte[] headLength = byteBufAdapter.readBytes(PacketHead.PACKET_HEAD_LENGTH_BYTES);
         byte sequenceId = byteBufAdapter.readByte();
         head = new PacketHead(headLength, sequenceId);
 
         //解析body
-        readBody(byteBufAdapter);
+        readBody(byteBufAdapter, packetContext);
     }
 
     /**
      * 解析packet body 留给子类实现
      */
-    protected abstract void readBody(ByteBufAdapter byteBufAdapter);
+    protected abstract void readBody(ByteBufAdapter byteBufAdapter, PacketContext packetContext);
 
     /**
      * 验证一个packet是否解析成功,由子类选择是否实现

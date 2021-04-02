@@ -25,6 +25,8 @@ public class DemoTest {
 
     public static void main(String[] args) throws Exception {
         Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+        conn.createStatement().executeQuery("select * from lesson");
+        System.out.println(conn);
         conn.close();
     }
 }

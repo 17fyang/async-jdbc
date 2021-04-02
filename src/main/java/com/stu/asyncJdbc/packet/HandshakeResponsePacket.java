@@ -6,7 +6,6 @@ import com.stu.asyncJdbc.net.ByteBufAdapter;
 import com.stu.asyncJdbc.util.LenencUtil;
 import com.stu.asyncJdbc.util.StringUtil;
 
-import java.util.Arrays;
 import java.util.Map;
 
 
@@ -50,10 +49,6 @@ public class HandshakeResponsePacket extends SendPacket {
         String password = loginConfigBuilder.getPassword();
         String authRandomCode = loginConfigBuilder.getAuthRandomCode();
         byte[] verifiedCode = loginConfigBuilder.getAuthPlugin().verify(StringUtil.withAscii(password), StringUtil.withAscii(authRandomCode));
-
-        System.out.println("verifyCode:" + Arrays.toString(password.getBytes()));
-        System.out.println("verifyCode:" + Arrays.toString(authRandomCode.getBytes()));
-        System.out.println("verifyCode:" + Arrays.toString(verifiedCode));
 
         if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0) {
             byte[] lenencLen = LenencUtil.ofInt(verifiedCode.length);

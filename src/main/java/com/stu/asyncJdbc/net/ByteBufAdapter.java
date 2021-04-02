@@ -3,6 +3,7 @@ package com.stu.asyncJdbc.net;
 import com.stu.asyncJdbc.common.CommonConfig;
 import com.stu.asyncJdbc.common.enumeration.ByteEnum;
 import com.stu.asyncJdbc.common.exception.CodeConversionException;
+import com.stu.asyncJdbc.util.LenencUtil;
 import com.stu.asyncJdbc.util.StringUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -109,6 +110,15 @@ public class ByteBufAdapter {
         return dst;
     }
 
+    /**
+     * 读取lenenc类型的int
+     *
+     * @return
+     */
+    public int readLenencInt() {
+        return LenencUtil.read(this);
+    }
+
     public String readStringNull() {
         List<Byte> list = new LinkedList<>();
         byte temp;
@@ -122,6 +132,16 @@ public class ByteBufAdapter {
         return this.readString(length, CommonConfig.DEFAULT_CHARSET_NAME);
     }
 
+    /**
+     * 将byteBufAdapter中的所有剩余内容读取到String中
+     *
+     * @return
+     */
+    public String readStringEOF() {
+        int len = this.byteBuf.readableBytes();
+        return readString(len);
+    }
+
     public String readString(int length, String charSetName) {
         byte[] value = this.readBytes(length);
         try {
@@ -131,6 +151,11 @@ public class ByteBufAdapter {
         }
     }
 
+    /**
+     * 获取ByteBufAdapter中的所有byte
+     *
+     * @return
+     */
     public byte[] getAllBytes() {
         byte[] buf = new byte[this.byteBuf.readableBytes()];
         int readerIndex = this.byteBuf.readerIndex();
