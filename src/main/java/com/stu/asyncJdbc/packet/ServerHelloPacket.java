@@ -4,7 +4,8 @@ import com.stu.asyncJdbc.common.enumeration.CapabilityFlag;
 import com.stu.asyncJdbc.common.enumeration.MysqlCharset;
 import com.stu.asyncJdbc.common.exception.PacketAnalysisException;
 import com.stu.asyncJdbc.common.exception.UnsupportVersionException;
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.handler.ChannelContext;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -25,7 +26,7 @@ public class ServerHelloPacket extends ReadPacket {
     private String authPluginName;
 
     @Override
-    public void readBody(ByteBufAdapter byteBufAdapter, PacketContext packetContext) {
+    public void readBody(ByteBufAdapter byteBufAdapter, ChannelContext channelContext) {
         // 协议版本号
         this.protoVersion = byteBufAdapter.readByte();
 

@@ -1,6 +1,7 @@
 package com.stu.asyncJdbc.packet;
 
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.handler.ChannelContext;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -13,19 +14,19 @@ public abstract class ReadPacket extends Packet {
     /**
      * 从byteBuf中解析内容到packet中
      */
-    public final void read(ByteBufAdapter byteBufAdapter, PacketContext packetContext) {
+    public final void read(ByteBufAdapter byteBufAdapter, ChannelContext channelContext) {
         byte[] headLength = byteBufAdapter.readBytes(PacketHead.PACKET_HEAD_LENGTH_BYTES);
         byte sequenceId = byteBufAdapter.readByte();
         head = new PacketHead(headLength, sequenceId);
 
         //解析body
-        readBody(byteBufAdapter, packetContext);
+        readBody(byteBufAdapter, channelContext);
     }
 
     /**
      * 解析packet body 留给子类实现
      */
-    protected abstract void readBody(ByteBufAdapter byteBufAdapter, PacketContext packetContext);
+    protected abstract void readBody(ByteBufAdapter byteBufAdapter, ChannelContext channelContext);
 
     /**
      * 验证一个packet是否解析成功,由子类选择是否实现

@@ -1,6 +1,6 @@
 package com.stu.asyncJdbc.util;
 
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -21,10 +21,10 @@ public class LenencUtil {
     }
 
     public static int read(ByteBufAdapter byteBufAdapter) {
-        byte b = byteBufAdapter.readByte();
-        if (b < (byte) (0xfb)) {
+        int b = 0xff & byteBufAdapter.readByte();
+        if (b < 0xfb) {
             return b;
-        } else if (b == (byte) (0xfc)) {
+        } else if (b == 0xfc) {
             return byteBufAdapter.readInt2();
         }
         //todo 不支持过长的lenenc 数据

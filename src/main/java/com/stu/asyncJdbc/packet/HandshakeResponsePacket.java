@@ -2,7 +2,8 @@ package com.stu.asyncJdbc.packet;
 
 import com.stu.asyncJdbc.common.enumeration.CapabilityFlag;
 import com.stu.asyncJdbc.common.enumeration.MysqlCharset;
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.LoginBuilder;
 import com.stu.asyncJdbc.util.LenencUtil;
 import com.stu.asyncJdbc.util.StringUtil;
 
@@ -21,16 +22,16 @@ public class HandshakeResponsePacket extends SendPacket {
     public static final int DEFAULT_MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
     private int maxPacketSize = DEFAULT_MAX_PACKET_SIZE;
     private byte charset = MysqlCharset.UTF8_GENERAL_CI.getCode();
-    private LoginConfigBuilder loginConfigBuilder;
+    private LoginBuilder loginBuilder;
 
-    public HandshakeResponsePacket(LoginConfigBuilder loginConfigBuilder) {
-        this.loginConfigBuilder = loginConfigBuilder;
+    public HandshakeResponsePacket(LoginBuilder loginBuilder) {
+        this.loginBuilder = loginBuilder;
     }
 
     @Override
     public void writeBody(ByteBufAdapter byteBufAdapter) {
         //client capability
-        int clientCapability = loginConfigBuilder.getClientCapability();
+        int clientCapability = loginBuilder.getClientCapability();
         byteBufAdapter.writeInt4(clientCapability);
 
         //max packet size
@@ -43,12 +44,12 @@ public class HandshakeResponsePacket extends SendPacket {
         byteBufAdapter.writeSameBytes((byte) 0, 23);
 
         //user name
-        byteBufAdapter.writeStringNull(loginConfigBuilder.getUser());
+        byteBufAdapter.writeStringNull(loginBuilder.getUser());
 
         //auth-response
-        String password = loginConfigBuilder.getPassword();
-        String authRandomCode = loginConfigBuilder.getAuthRandomCode();
-        byte[] verifiedCode = loginConfigBuilder.getAuthPlugin().verify(StringUtil.withAscii(password), StringUtil.withAscii(authRandomCode));
+        String password = loginBuilder.getPassword();
+        String authRandomCode = loginBuilder.getAuthRandomCode();
+        byte[] verifiedCode = loginBuilder.getAuthPlugin().verify(StringUtil.withAscii(password), StringUtil.withAscii(authRandomCode));
 
         if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0) {
             byte[] lenencLen = LenencUtil.ofInt(verifiedCode.length);
@@ -63,12 +64,12 @@ public class HandshakeResponsePacket extends SendPacket {
 
         //database name
         if ((clientCapability & CapabilityFlag.CLIENT_CONNECT_WITH_DB) != 0) {
-            byteBufAdapter.writeStringNull(loginConfigBuilder.getDatabaseName());
+            byteBufAdapter.writeStringNull(loginBuilder.getDatabaseName());
         }
 
         //auth plugin name
         if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH) != 0) {
-            byteBufAdapter.writeStringNull(loginConfigBuilder.getAuthPlugin().getPluginName());
+            byteBufAdapter.writeStringNull(loginBuilder.getAuthPlugin().getPluginName());
         }
 
         //connect attribute
@@ -77,7 +78,7 @@ public class HandshakeResponsePacket extends SendPacket {
 
             int attributeLength = 0;
 
-            for (Map.Entry<String, String> entry : loginConfigBuilder.getConnectAttribute().entrySet()) {
+            for (Map.Entry<String, String> entry : loginBuilder.getConnectAttribute().entrySet()) {
                 byte[] key = entry.getKey().getBytes();
                 byte[] keyLen = LenencUtil.ofInt(key.length);
                 byte[] value = entry.getValue().getBytes();
@@ -100,7 +101,7 @@ public class HandshakeResponsePacket extends SendPacket {
         return "HandshakeResponsePacket{" +
                 "maxPacketSize=" + maxPacketSize +
                 ", charset=" + charset +
-                ", loginConfigBuilder=" + loginConfigBuilder +
+                ", loginBuilder=" + loginBuilder +
                 '}';
     }
 }

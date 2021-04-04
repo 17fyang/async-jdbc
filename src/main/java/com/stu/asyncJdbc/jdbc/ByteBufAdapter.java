@@ -1,4 +1,4 @@
-package com.stu.asyncJdbc.net;
+package com.stu.asyncJdbc.jdbc;
 
 import com.stu.asyncJdbc.common.CommonConfig;
 import com.stu.asyncJdbc.common.enumeration.ByteEnum;
@@ -84,6 +84,15 @@ public class ByteBufAdapter {
      */
     public byte readByte() {
         return byteBuf.readByte();
+    }
+
+    /**
+     * 读取int1类型
+     *
+     * @return
+     */
+    public int readInt1() {
+        return byteBuf.readByte() & 0xff;
     }
 
     /**

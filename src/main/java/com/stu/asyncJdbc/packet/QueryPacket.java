@@ -1,7 +1,7 @@
 package com.stu.asyncJdbc.packet;
 
 import com.stu.asyncJdbc.common.enumeration.ByteEnum;
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 
 /**
  * @author: 乌鸦坐飞机亠

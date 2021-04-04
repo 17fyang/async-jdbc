@@ -1,10 +1,11 @@
-package com.stu.asyncJdbc.packet;
+package com.stu.asyncJdbc.jdbc;
 
 import com.stu.asyncJdbc.common.auth.IAuthPlugin;
 import com.stu.asyncJdbc.common.auth.SecureAuthentication;
 import com.stu.asyncJdbc.common.exception.IllegalConnectException;
-import com.stu.asyncJdbc.util.MockUtil;
 import com.stu.asyncJdbc.util.StringUtil;
+import io.netty.channel.Channel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,17 +15,19 @@ import java.util.Map;
  * @date: 2021/2/25 22:04
  * @Description:
  */
-public class LoginConfigBuilder {
-    private String user = "";
-    private String password = "";
-    private String authRandomCode = "";
+public class LoginBuilder {
+    private String host = "127.0.0.1";
+    private int port = 3306;
+    private String user = "root";
+    private String password = "123456";
     private String databaseName = "";
-    private int clientCapability = MockUtil.mockClientCapability();
+    private String authRandomCode = "";
+    private int clientCapability = 0x003ea20f;
     //todo 当前仅支持mysql_native_password验证方式
-    private IAuthPlugin authPlugin = new SecureAuthentication();
-    private Map<String, String> connectAttribute = new HashMap<>();
+    private final IAuthPlugin authPlugin = new SecureAuthentication();
+    private final Map<String, String> connectAttribute = new HashMap<>();
 
-    private LoginConfigBuilder() {
+    private LoginBuilder() {
     }
 
     /**
@@ -32,36 +35,65 @@ public class LoginConfigBuilder {
      *
      * @return
      */
-    public static LoginConfigBuilder build() {
-        return new LoginConfigBuilder();
+    public static LoginBuilder build() {
+
+        return new LoginBuilder();
     }
 
-    public LoginConfigBuilder withClientCapability(int clientCapability) {
+
+    /**
+     * 发起登录请求
+     *
+     * @return
+     */
+    public ClientConnectionPool login() {
+        try {
+            ClientStarter clientStarter = new ClientStarter(host, port);
+            clientStarter.start();
+
+            ClientConnectionPool connectionPool = new ClientConnectionPool(clientStarter);
+            ClientChannelFactory<NioSocketChannel> channelFactory = clientStarter.getChannelFactory();
+            for (Channel channel : channelFactory.getList()) connectionPool.addChannel(channel);
+            
+            return connectionPool;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    public LoginBuilder withClientCapability(int clientCapability) {
         this.clientCapability = clientCapability;
         return this;
     }
 
-    public LoginConfigBuilder withUser(String user) {
+    public LoginBuilder withUser(String user) {
         this.user = user;
         return this;
     }
 
-    public LoginConfigBuilder withPassword(String password) {
+    public LoginBuilder withHost(String host) {
+        this.host = host;
+        return this;
+    }
+
+
+    public LoginBuilder withPassword(String password) {
         this.password = password;
         return this;
     }
 
-    public LoginConfigBuilder withDatabase(String databaseName) {
+    public LoginBuilder withDatabase(String databaseName) {
         this.databaseName = databaseName;
         return this;
     }
 
-    public LoginConfigBuilder withServerRandomCode(String randomCode) {
+    public LoginBuilder withServerRandomCode(String randomCode) {
         this.authRandomCode = randomCode;
         return this;
     }
 
-    public LoginConfigBuilder withAttribute(String key, String value) {
+    public LoginBuilder withAttribute(String key, String value) {
         if (StringUtil.isNull(key)) throw new IllegalConnectException();
         connectAttribute.put(key, value);
         return this;
@@ -69,7 +101,7 @@ public class LoginConfigBuilder {
 
     @Override
     public String toString() {
-        return "LoginConfigBuilder{" +
+        return "LoginBuilder{" +
                 "user='" + user + '\'' +
                 ", password='" + password + '\'' +
                 ", authRandomCode='" + authRandomCode + '\'' +

@@ -13,9 +13,9 @@ public class PacketHead {
     //packet head使用的byte个数
     public static final int PACKET_HEAD_BYTES = 4;
     //荷载长度 表示实际内容的长度
-    private int contentLength;
+    private final int contentLength;
     //包id
-    private byte sequenceId;
+    private final byte sequenceId;
 
     public PacketHead(byte[] length, byte sequenceId) {
         //转成Integer类型的长度

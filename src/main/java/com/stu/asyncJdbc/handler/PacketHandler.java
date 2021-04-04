@@ -1,8 +1,7 @@
 package com.stu.asyncJdbc.handler;
 
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 import com.stu.asyncJdbc.packet.Packet;
-import com.stu.asyncJdbc.packet.PacketContext;
 import com.stu.asyncJdbc.packet.ReadPacket;
 import com.stu.asyncJdbc.packet.SendPacket;
 import org.slf4j.Logger;
@@ -27,14 +26,14 @@ public class PacketHandler<P extends Packet> {
      * @param byteBufAdapter
      * @return
      */
-    public P read(ByteBufAdapter byteBufAdapter, PacketContext packetContext) {
+    public P read(ByteBufAdapter byteBufAdapter, ChannelContext channelContext) {
         try {
             P instance = clazz.newInstance();
 
             if (!(instance instanceof ReadPacket)) throw new RuntimeException("un readable type");
 
             ReadPacket readPacketInstance = (ReadPacket) instance;
-            readPacketInstance.read(byteBufAdapter, packetContext);
+            readPacketInstance.read(byteBufAdapter, channelContext);
 
             return instance;
         } catch (Exception e) {

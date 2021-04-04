@@ -1,6 +1,6 @@
 package com.stu.asyncJdbc.packet;
 
-import com.stu.asyncJdbc.net.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 

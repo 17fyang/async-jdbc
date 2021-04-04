@@ -21,6 +21,10 @@ public class ChannelService {
         return map.containsKey(channel);
     }
 
+    public void removeChannel(Channel channel) {
+        map.remove(channel);
+    }
+
     public void addContext(Channel channel, ChannelContext channelContext) {
         map.put(channel, channelContext);
     }
