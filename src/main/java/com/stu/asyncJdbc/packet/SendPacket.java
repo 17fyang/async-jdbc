@@ -1,5 +1,6 @@
 package com.stu.asyncJdbc.packet;
 
+import com.stu.asyncJdbc.handler.ChannelContext;
 import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -15,7 +16,7 @@ public abstract class SendPacket extends Packet {
      *
      * @return
      */
-    public final ByteBufAdapter write() {
+    public final ByteBufAdapter write(ChannelContext channelContext) {
         ByteBufAdapter byteBufAdapter = new ByteBufAdapter();
         writeBody(byteBufAdapter);
 
@@ -25,8 +26,7 @@ public abstract class SendPacket extends Packet {
         //todo 复制了一遍ByteBuf内容 待优化
         ByteBuf writeByteBuf = Unpooled.buffer(bodyLength + PacketHead.PACKET_HEAD_BYTES);
 
-        //todo-暂未支持多个序列号的包，所以序列号默认为1
-        PacketHead head = new PacketHead(bodyLength, (byte) 1);
+        PacketHead head = new PacketHead(bodyLength, (byte) channelContext.getSequenceId());
 
         writeByteBuf.writeBytes(head.toBytes());
         writeByteBuf.writeBytes(bodyBytes);

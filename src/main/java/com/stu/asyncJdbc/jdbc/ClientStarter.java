@@ -1,6 +1,7 @@
 package com.stu.asyncJdbc.jdbc;
 
 import com.stu.asyncJdbc.common.exception.LoginException;
+import com.stu.asyncJdbc.handler.ChannelContext;
 import com.stu.asyncJdbc.handler.PacketChannelHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
@@ -14,9 +15,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  * @Description:
  */
 public class ClientStarter {
-    //客户端loop线程数量
-    public int loopThreadNum = 3;
-    private int connectionNum = 1;
     public final String host;
     public final int port;
     private NioEventLoopGroup clientLoopGroup;
@@ -25,12 +23,17 @@ public class ClientStarter {
     public ClientStarter(String host, int port) {
         this.host = host;
         this.port = port;
-
     }
 
 
-    public Bootstrap start() {
-        clientLoopGroup = new NioEventLoopGroup(loopThreadNum);
+    /**
+     * 开启Netty客户端
+     *
+     * @param loginBuilder
+     * @return
+     */
+    public Bootstrap start(LoginBuilder loginBuilder) {
+        clientLoopGroup = new NioEventLoopGroup(loginBuilder.getThreadNum());
         try {
             Bootstrap clientBootStrap = new Bootstrap();
             clientBootStrap.group(clientLoopGroup);
@@ -42,11 +45,13 @@ public class ClientStarter {
             clientBootStrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel socketChannel) throws Exception {
-                    socketChannel.pipeline().addLast(new PacketChannelHandler());
+                    ChannelContext channelContext = new ChannelContext(socketChannel);
+                    PacketChannelHandler packetChannelHandler = new PacketChannelHandler(loginBuilder, loginBuilder.getConnectionPool(), channelContext);
+                    socketChannel.pipeline().addLast(packetChannelHandler);
                 }
             });
 
-            for (int i = 0; i < connectionNum; i++) {
+            for (int i = 0; i < loginBuilder.getChannelNum(); i++) {
                 //连接
                 clientBootStrap.connect(host, port).sync();
             }

@@ -4,6 +4,7 @@ import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
 import com.stu.asyncJdbc.packet.Packet;
 import com.stu.asyncJdbc.packet.ReadPacket;
 import com.stu.asyncJdbc.packet.SendPacket;
+import io.netty.channel.ChannelFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class PacketHandler<P extends Packet> {
 
             return instance;
         } catch (Exception e) {
-            logger.error("fail to read packet ");
+            logger.error("fail to read packet, maybe ReadPacket should has empty constructor");
             e.printStackTrace();
         }
         return null;
@@ -49,17 +50,17 @@ public class PacketHandler<P extends Packet> {
      * @param packet
      * @return
      */
-    public ByteBufAdapter write(P packet) {
+    public ChannelFuture write(P packet, ChannelContext channelContext) {
         try {
             if (!(packet instanceof SendPacket)) throw new RuntimeException("un writable type");
-
+            
             SendPacket sendPacketInstance = (SendPacket) packet;
-            return sendPacketInstance.write();
+            ByteBufAdapter byteBufAdapter = sendPacketInstance.write(channelContext);
+            return channelContext.channel().writeAndFlush(byteBufAdapter.getByteBuf());
         } catch (Exception e) {
-            logger.error("fail to write packet " + packet);
+            System.out.println(("fail to write packet " + packet));
             e.printStackTrace();
         }
         return null;
     }
-
 }

@@ -1,9 +1,8 @@
 package com.stu.asyncJdbc.jdbc;
 
-import io.netty.channel.Channel;
+import com.stu.asyncJdbc.handler.ChannelContext;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * @author: 乌鸦坐飞机亠
@@ -11,24 +10,27 @@ import java.util.Set;
  * @Description:
  */
 public class ClientConnectionPool {
-    private ClientStarter clientStarter;
-    Set<ChannelPack> usedChannels = new HashSet<>();
-    Set<ChannelPack> freeChannels = new HashSet<>();
+    private final ClientStarter clientStarter;
+    LinkedBlockingQueue<ChannelContext> freeChannels = new LinkedBlockingQueue<>();
 
     protected ClientConnectionPool(ClientStarter clientStarter) {
         this.clientStarter = clientStarter;
     }
 
     public AsyncStatement createAsyncStatement() {
-        return new AsyncStatement(this);
+        try {
+            ChannelContext channelContext = freeChannels.take();
+            return new AsyncStatement(this, channelContext);
+        } catch (InterruptedException e) {
+            throw new RuntimeException("fail to build connect");
+        }
     }
 
-    public void addChannel(Channel channel) {
-        ChannelPack channelPack = new ChannelPack(channel);
-        freeChannels.add(channelPack);
+    public void addChannel(ChannelContext channel) {
+        freeChannels.add(channel);
     }
 
-    public void close() {
+    public void closeAll() {
         clientStarter.close();
     }
 }

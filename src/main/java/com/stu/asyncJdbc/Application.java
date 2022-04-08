@@ -12,13 +12,21 @@ import com.stu.asyncJdbc.jdbc.LoginBuilder;
 public class Application {
 
     public static void main(String[] args) {
+        runDemo();
+    }
+
+    private static void runDemo() {
         ClientConnectionPool connectionPool = LoginBuilder.build().withHost("120.79.175.145").withUser("visitor")
-                .withDatabase("otsea").withPassword("123456").login();
+                .withDatabase("otsea").withPassword("123456").withThreadNum(3).withChannelNum(6).login();
 
         AsyncStatement stat = connectionPool.createAsyncStatement();
 
-        stat.execute("select * from user", (statement, result) -> {
+        stat.execute("select * from user", (ctx, result) -> {
             System.out.println("Get the result successful");
         });
+        
+        stat.close();
+        connectionPool.closeAll();
     }
+
 }

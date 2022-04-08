@@ -4,8 +4,6 @@ import com.stu.asyncJdbc.common.auth.IAuthPlugin;
 import com.stu.asyncJdbc.common.auth.SecureAuthentication;
 import com.stu.asyncJdbc.common.exception.IllegalConnectException;
 import com.stu.asyncJdbc.util.StringUtil;
-import io.netty.channel.Channel;
-import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,11 +19,24 @@ public class LoginBuilder {
     private String user = "root";
     private String password = "123456";
     private String databaseName = "";
-    private String authRandomCode = "";
-    private int clientCapability = 0x003ea20f;
-    //todo 当前仅支持mysql_native_password验证方式
-    private final IAuthPlugin authPlugin = new SecureAuthentication();
+
+    //workerGroup线程数量
+    private int threadNum = 1;
+
+    //mysql连接个数
+    private int channelNum = 3;
+
+    //其余参数
     private final Map<String, String> connectAttribute = new HashMap<>();
+
+    //客户端capability
+    private int clientCapability = 0x003ea20f;
+
+    //todo 校验插件，当前仅支持mysql_native_password验证方式
+    private final IAuthPlugin authPlugin = new SecureAuthentication();
+
+    //该次登录的连接池对象
+    private ClientConnectionPool connectionPool;
 
     private LoginBuilder() {
     }
@@ -36,7 +47,6 @@ public class LoginBuilder {
      * @return
      */
     public static LoginBuilder build() {
-
         return new LoginBuilder();
     }
 
@@ -49,12 +59,12 @@ public class LoginBuilder {
     public ClientConnectionPool login() {
         try {
             ClientStarter clientStarter = new ClientStarter(host, port);
-            clientStarter.start();
 
             ClientConnectionPool connectionPool = new ClientConnectionPool(clientStarter);
-            ClientChannelFactory<NioSocketChannel> channelFactory = clientStarter.getChannelFactory();
-            for (Channel channel : channelFactory.getList()) connectionPool.addChannel(channel);
-            
+            this.connectionPool = connectionPool;
+
+            clientStarter.start(this);
+
             return connectionPool;
         } catch (Exception e) {
             e.printStackTrace();
@@ -78,6 +88,16 @@ public class LoginBuilder {
     }
 
 
+    public LoginBuilder withThreadNum(int threadNum) {
+        this.threadNum = threadNum;
+        return this;
+    }
+
+    public LoginBuilder withChannelNum(int channelNum) {
+        this.channelNum = channelNum;
+        return this;
+    }
+
     public LoginBuilder withPassword(String password) {
         this.password = password;
         return this;
@@ -88,8 +108,8 @@ public class LoginBuilder {
         return this;
     }
 
-    public LoginBuilder withServerRandomCode(String randomCode) {
-        this.authRandomCode = randomCode;
+    public LoginBuilder withPort(int port) {
+        this.port = port;
         return this;
     }
 
@@ -97,19 +117,6 @@ public class LoginBuilder {
         if (StringUtil.isNull(key)) throw new IllegalConnectException();
         connectAttribute.put(key, value);
         return this;
-    }
-
-    @Override
-    public String toString() {
-        return "LoginBuilder{" +
-                "user='" + user + '\'' +
-                ", password='" + password + '\'' +
-                ", authRandomCode='" + authRandomCode + '\'' +
-                ", databaseName='" + databaseName + '\'' +
-                ", clientCapability=" + clientCapability +
-                ", authPlugin=" + authPlugin +
-                ", connectAttribute=" + connectAttribute +
-                '}';
     }
 
     public Map<String, String> getConnectAttribute() {
@@ -120,10 +127,6 @@ public class LoginBuilder {
         return databaseName;
     }
 
-    public String getAuthRandomCode() {
-        return authRandomCode;
-    }
-
     public IAuthPlugin getAuthPlugin() {
         return authPlugin;
     }
@@ -132,11 +135,21 @@ public class LoginBuilder {
         return user;
     }
 
-
     public String getPassword() {
         return password;
     }
 
+    public int getThreadNum() {
+        return threadNum;
+    }
+
+    public int getChannelNum() {
+        return channelNum;
+    }
+
+    public ClientConnectionPool getConnectionPool() {
+        return connectionPool;
+    }
 
     public int getClientCapability() {
         return clientCapability;

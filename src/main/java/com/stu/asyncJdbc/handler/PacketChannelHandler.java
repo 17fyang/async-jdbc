@@ -1,6 +1,7 @@
 package com.stu.asyncJdbc.handler;
 
 import com.stu.asyncJdbc.jdbc.ByteBufAdapter;
+import com.stu.asyncJdbc.jdbc.ClientConnectionPool;
 import com.stu.asyncJdbc.jdbc.LoginBuilder;
 import com.stu.asyncJdbc.packet.HandshakeResponsePacket;
 import com.stu.asyncJdbc.packet.OkPacket;
@@ -16,8 +17,15 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * @Description:
  */
 public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
-    private volatile boolean isRead = false;
-    private volatile boolean isWrite = false;
+    private final LoginBuilder loginBuilder;
+    private final ClientConnectionPool connectionPool;
+    private final ChannelContext channelContext;
+
+    public PacketChannelHandler(LoginBuilder loginBuilder, ClientConnectionPool connectionPool, ChannelContext channelCtx) {
+        this.loginBuilder = loginBuilder;
+        this.connectionPool = connectionPool;
+        this.channelContext = channelCtx;
+    }
 
     /**
      * 通道就绪
@@ -27,8 +35,6 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        ChannelContext channelContext = new ChannelContext();
-        ChannelService.INSTANCE.addContext(ctx.channel(), channelContext);
 
         System.out.println("channel has ready ...");
     }
@@ -42,9 +48,6 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
-
-        ChannelService.INSTANCE.removeChannel(ctx.channel());
-        System.out.println("close channel..");
     }
 
     /**
@@ -55,29 +58,31 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println(ctx.channel());
-        System.out.println(Thread.currentThread().getName());
-        ByteBuf byteBuf = (ByteBuf) msg;
-        ByteBufAdapter byteBufAdapter = new ByteBufAdapter(byteBuf);
-        ChannelContext channelContext = ChannelService.INSTANCE.getChannelContext(ctx.channel());
-        if (channelContext == null) return;
+        ByteBufAdapter byteBufAdapter = new ByteBufAdapter((ByteBuf) msg);
 
         if (channelContext.getChannelStatus() == ChannelContext.TCP_CONNECTED) {
             ServerHelloPacket serverHelloPacket = PacketHandleFactory.SERVER_HELLO_HANDLER.read(byteBufAdapter, channelContext);
 
             //修改channel状态
             channelContext.flagReceiveServerHello(serverHelloPacket);
-
-            System.out.println(serverHelloPacket);
         } else if (channelContext.getChannelStatus() == ChannelContext.RESP_HANDSHAKE) {
             TypicalReadPacket typicalPacket = PacketHandleFactory.TYPICAL_PACKET_HANDLER.readTypical(byteBufAdapter, channelContext);
 
-            //修改channel状态
-            if (typicalPacket instanceof OkPacket) channelContext.flagMysqlConnected();
+            //建立连接成功
+            if (typicalPacket instanceof OkPacket) {
+                channelContext.flagMysqlConnected();
+                connectionPool.addChannel(channelContext);
+            } else {
+                System.out.println("建立连接失败");
+            }
+        } else if (channelContext.getChannelStatus() == ChannelContext.WAIT_RESP) {
+            //todo 这里读取方式和其他的不一样，包内容没有标明包类型
+            TypicalReadPacket typicalPacket = PacketHandleFactory.TYPICAL_PACKET_HANDLER.readTypical(byteBufAdapter, channelContext);
 
-            System.out.println(typicalPacket);
+            //todo 默认执行语句成功
+            channelContext.flagMysqlConnected();
         }
-
+        channelContext.sequenceAdd();
     }
 
     /**
@@ -87,27 +92,24 @@ public class PacketChannelHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        ChannelContext channelContext = ChannelService.INSTANCE.getChannelContext(ctx.channel());
-        if (channelContext == null) return;
+        //唤醒一个写入线程
+        synchronized (ctx.channel()) {
+            ctx.channel().notify();
+        }
 
         //server handshake包响应
         if (channelContext.getChannelStatus() == ChannelContext.RECEIVE_HANDSHAKE_INIT) {
             ServerHelloPacket serverHelloPacket = channelContext.getServerHelloPacket();
-            LoginBuilder builder = LoginBuilder.build().withUser("visitor")
-                    .withDatabase("otsea").withPassword("123456")
-                    .withServerRandomCode(serverHelloPacket.getAuthPluginPart1() + serverHelloPacket.getAuthPluginPart2());
-            HandshakeResponsePacket responsePacket = new HandshakeResponsePacket(builder);
+            String authPluginCode = serverHelloPacket.getAuthPluginPart1() + serverHelloPacket.getAuthPluginPart2();
 
-            //写入到adapter
-            ByteBufAdapter byteBufAdapter = PacketHandleFactory.HANDSHAKE_RESPONSE_PACKET_PACKET_HANDLER.write(responsePacket);
+            HandshakeResponsePacket responsePacket = new HandshakeResponsePacket(loginBuilder, authPluginCode);
 
-            //修改channel状态
+            //发送数据包
+            PacketHandleFactory.HANDSHAKE_RESPONSE_PACKET_PACKET_HANDLER.write(responsePacket, channelContext);
+
             channelContext.flagHasResponseHandshake();
-
-            //发送tcp包
-            ctx.writeAndFlush(byteBufAdapter.getByteBuf());
+            channelContext.sequenceAdd();
         }
-
     }
 
 }

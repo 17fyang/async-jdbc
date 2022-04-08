@@ -6,5 +6,5 @@ package com.stu.asyncJdbc.jdbc;
  * @Description:
  */
 public interface IExecuteResult {
-    void handle(AsyncStatement stat, AsyncResult res);
+    void handle(ExecuteContext ctx, AsyncResult res);
 }

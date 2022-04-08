@@ -23,9 +23,11 @@ public class HandshakeResponsePacket extends SendPacket {
     private int maxPacketSize = DEFAULT_MAX_PACKET_SIZE;
     private byte charset = MysqlCharset.UTF8_GENERAL_CI.getCode();
     private LoginBuilder loginBuilder;
+    private String randomCode;
 
-    public HandshakeResponsePacket(LoginBuilder loginBuilder) {
+    public HandshakeResponsePacket(LoginBuilder loginBuilder, String randomCode) {
         this.loginBuilder = loginBuilder;
+        this.randomCode = randomCode;
     }
 
     @Override
@@ -48,7 +50,7 @@ public class HandshakeResponsePacket extends SendPacket {
 
         //auth-response
         String password = loginBuilder.getPassword();
-        String authRandomCode = loginBuilder.getAuthRandomCode();
+        String authRandomCode = this.randomCode;
         byte[] verifiedCode = loginBuilder.getAuthPlugin().verify(StringUtil.withAscii(password), StringUtil.withAscii(authRandomCode));
 
         if ((clientCapability & CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0) {
